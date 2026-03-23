@@ -441,8 +441,56 @@ const TEAMS = {
       prompt:`Strategic partnerships and B2B development. Find others' resources, audiences, channels to accelerate growth.\n1. PARTNERSHIP MAP. Potential partners: adjacent businesses, suppliers, industry associations, media, education. Specific companies.\n2. PARTNERSHIP MODELS. Per partner: referral commission, joint product, cross-promo, white label, API integration, franchise, joint events. We give / we get.\n3. API INTEGRATIONS. If digital: integrate with whom to become more valuable. 1C, CRM, marketplaces, banks, telephony, messengers. Which increase client value.\n4. INDUSTRY ASSOCIATIONS. Worth joining? What it gives: clients, reputation, info, tenders. Entry cost.\n5. REGIONAL EXPANSION VIA PARTNERS. Regions through local partners (dealers, franchisees, agents). Structure: agreement, commission, quality control, training.\n6. CO-MARKETING. Joint activities: webinars, research, content, events. Maximum reach, minimum cost.\n7. PARTNER MANAGEMENT. Multiple partners: partner portal, CRM, reporting, motivation. When to hire dedicated partner manager.`},
     {id:'scout',title:'Инновационный скаут',emoji:'🔬',color:'#c07a2a',model:'perplexity/sonar-pro',desc:'Тренды, зарубежный опыт',
       prompt:`Innovation scout. Find ideas, tech, approaches to apply before competitors.\n1. GLOBAL ANALOGUES. For this product: who does similar abroad — USA, Europe, China, India, SE Asia. Specific companies, product, model, scale. Differences. What to bring to Russia.\n2. FEATURES MISSING IN RUSSIA. What foreign analogues do that Russian ones don't. Specific feature list with descriptions. Each: adaptation difficulty, potential impact.\n3. STARTUPS IN NICHE. Fresh (1-2 years): Crunchbase, ProductHunt, YCombinator, local accelerators. What's new, funding, traction.\n4. TECH TRENDS. Applicable new tech: AI/ML (computer vision, NLP, predictive), IoT (equipment sensors), blockchain (if genuinely useful), AR/VR. Only if applicable — not for buzzwords.\n5. CROSS-INDUSTRY IDEAS. What works elsewhere, transferable here. Uber model for equipment, Airbnb for warehouses, Amazon logistics. Specific mechanics.\n6. OPEN DATA & APIs. Available data for competitive advantage: government registries, cadastre, tender data, weather, traffic. Available APIs.\n7. EXPERIMENTAL IDEAS. 2-3 wild ideas nobody does but could disrupt the niche. Don't need to be realistic now — show direction. Each: how to test cheaply.`}
+  ]},
+  discussion:{name:'Дискуссия',emoji:'💬',color:'var(--accent-purple)',hasSynth:true,members:[
+    {id:'analyst_d',title:'Аналитик',emoji:'🧠',color:'#2563eb',model:'anthropic/claude-sonnet-4',desc:'Системный анализ, логика, структура',
+      prompt:`You are a universal analytical expert. You can analyze ANY topic: code, business, strategy, technology, science, logic.
+RULES:
+1. ANALYZE the question thoroughly. Break it into components. Find the core problem.
+2. STRUCTURE your answer: key thesis → arguments → evidence → risks → recommendation.
+3. If previous participants already responded — COMMENT on their points: agree/disagree with specifics. Don't repeat what's been said.
+4. Be HONEST. If the idea is bad — say so. If you're unsure — state your confidence level.
+5. For CODE: review architecture, find bugs, suggest improvements, assess maintainability.
+6. For BUSINESS: assess viability, risks, market, competition.
+7. ALWAYS give specific examples, numbers, tool names. No vague advice.
+8. If you need more data to give a quality answer — say what exactly is missing.
+Write in Russian. 200-400 words. No filler.`},
+    {id:'practitioner_d',title:'Практик',emoji:'🔧',color:'#059669',model:'openai/gpt-4o',desc:'Практический опыт, реализация, подводные камни',
+      prompt:`You are a universal practical expert. You assess ANY question from the "how to actually implement this" angle.
+RULES:
+1. REALITY CHECK. Theory is nice — but will this work in practice? What breaks in real conditions?
+2. IMPLEMENTATION. Step-by-step: who does what, with what tools, in what order, how long.
+3. PITFALLS. What goes wrong that nobody thinks about? Hidden costs, dependencies, bottlenecks.
+4. If previous participants responded — build on their analysis. Agree where right, challenge where wrong. Add what they missed.
+5. For CODE: does it actually run? Edge cases? Performance? Error handling? Real-world load?
+6. For BUSINESS: has anyone tried this? What happened? What's the MVP? First 30 days plan?
+7. ALTERNATIVES. "Option A works, but Option B is simpler/cheaper/faster because..."
+8. Be SPECIFIC. Tools, prices, timelines, team size. No "it depends" without explaining on what.
+Write in Russian. 200-400 words. No filler.`},
+    {id:'researcher_d',title:'Исследователь',emoji:'🔍',color:'#7c3aed',model:'perplexity/sonar-pro',desc:'Свежие данные, аналоги, мировой опыт',
+      prompt:`You are a universal research expert with access to current information. You analyze ANY question through data and global experience.
+RULES:
+1. FACTS & DATA. Find relevant statistics, benchmarks, research. Cite sources where possible.
+2. GLOBAL ANALOGUES. Who solved this problem already? USA, Europe, China, other markets. Specific companies, products, results.
+3. TRENDS. What direction is this field moving? What's emerging? What's dying?
+4. If previous participants responded — VERIFY their claims. Confirm with data or challenge with counter-evidence.
+5. For CODE: what frameworks/libraries exist? Benchmarks? Community adoption? Known issues?
+6. For BUSINESS: market size, competitors, pricing, success/failure cases.
+7. FRESH DATA. Your advantage is current information. Use it. Don't give outdated advice.
+8. If something is unavailable in Russia (sanctions, blocking) — say so and give alternatives.
+Write in Russian. 200-400 words. No filler.`}
   ]}
 };
+
+const DISC_SYNTH_PROMPT = `You are the Discussion Moderator creating the final summary.
+Based on three expert opinions, create a structured conclusion:
+1. CONSENSUS — what all three experts agree on
+2. KEY DISAGREEMENTS — where opinions differ and why
+3. BEST ANSWER — synthesize the strongest points from each expert into one coherent recommendation
+4. MISSING DATA — what additional information would improve the answer
+5. VERDICT — clear recommendation with next steps
+If experts contradicted each other — explain who is more likely correct and why.
+Write ENTIRELY in Russian. Be structured and concise. No fluff.`;
 
 // ============ STATE ============
 let S={apiKey:localStorage.getItem('openrouter_key')||'',projects:JSON.parse(localStorage.getItem('br4_projects')||'[]'),curProj:null,curTeam:null,running:false,abort:null,selectedMembers:[]};
@@ -472,8 +520,9 @@ function renderSB(){
       <div class="nav-project-desc">${p.desc}</div>
       <div class="nav-teams">
         <div class="nav-team ${a&&S.curTeam==='board'?'active':''}" onclick="event.stopPropagation();selTeam('${p.id}','board')"><span class="nav-team-dot" style="background:var(--accent)"></span>🏛️ Совет директоров</div>
+        <div class="nav-team ${a&&S.curTeam==='discussion'?'active':''}" onclick="event.stopPropagation();selTeam('${p.id}','discussion')"><span class="nav-team-dot" style="background:var(--accent-purple)"></span>💬 Дискуссия</div>
         <div class="nav-divider"></div>
-        ${tk.filter(k=>k!=='board').map(k=>{const t=TEAMS[k];return`<div class="nav-team ${a&&S.curTeam===k?'active':''}" onclick="event.stopPropagation();selTeam('${p.id}','${k}')"><span class="nav-team-dot" style="background:${t.color}"></span>${t.emoji} ${t.name}</div>`}).join('')}
+        ${tk.filter(k=>k!=='board'&&k!=='discussion').map(k=>{const t=TEAMS[k];return`<div class="nav-team ${a&&S.curTeam===k?'active':''}" onclick="event.stopPropagation();selTeam('${p.id}','${k}')"><span class="nav-team-dot" style="background:${t.color}"></span>${t.emoji} ${t.name}</div>`}).join('')}
       </div>
     </div>`}).join('')+`<button class="new-project-btn" onclick="newProjModal()">+ Новый проект</button>`;
 }
@@ -493,7 +542,7 @@ function renderView(){
   if(t){
     strip.style.display='flex';
     const sel=S.selectedMembers||[];
-    strip.innerHTML=t.members.map(m=>`<div class="member-chip ${sel.includes(m.id)?'selected':''}" id="chip-${m.id}" onclick="toggleMember('${m.id}')"><span class="member-dot" style="background:${m.color}"></span>${m.emoji} ${m.title}<div class="chip-tooltip"><div class="chip-tooltip-title">${m.title}</div><div class="chip-tooltip-model">${m.model}</div><div class="chip-tooltip-desc">${m.desc}</div></div></div>`).join('')+(S.curTeam==='board'?`<div class="member-chip" id="chip-synth"><span class="member-dot" style="background:var(--accent-gold)"></span>📋 Протокол</div>`:'')+
+    strip.innerHTML=t.members.map(m=>`<div class="member-chip ${sel.includes(m.id)?'selected':''}" id="chip-${m.id}" onclick="toggleMember('${m.id}')"><span class="member-dot" style="background:${m.color}"></span>${m.emoji} ${m.title}<div class="chip-tooltip"><div class="chip-tooltip-title">${m.title}</div><div class="chip-tooltip-model">${m.model}</div><div class="chip-tooltip-desc">${m.desc}</div></div></div>`).join('')+(S.curTeam==='board'?`<div class="member-chip" id="chip-synth"><span class="member-dot" style="background:var(--accent-gold)"></span>📋 Протокол</div>`:S.curTeam==='discussion'?`<div class="member-chip" id="chip-synth"><span class="member-dot" style="background:var(--accent-purple)"></span>⚡ Итог</div>`:'')+
     (sel.length?`<span class="selection-hint">Выбрано: ${sel.length} <button class="clear-selection" onclick="clearSelection()">сбросить</button></span>`:'');
   }else{strip.style.display='none'}
   renderMsgs()
@@ -572,12 +621,18 @@ async function sendQuestion(){
         }
       }catch(e){rmTyp();if(e.name==='AbortError')break;c.push({role:'board',memberId:m.id,title:m.title,text:`⚠️ ${e.message}`,model:m.model,emoji:m.emoji,color:m.color});renderMsgs()}
     }
-    if(isBoard&&S.running&&resps.length>1){
-      sb.innerHTML=`📋 Протокол... <button class="stop-btn" onclick="stop()">Стоп</button>`;
+    const needsSynth=(isBoard||t.hasSynth)&&S.running&&resps.length>1;
+    if(needsSynth){
+      const isDisc=S.curTeam==='discussion';
+      const synthTitle=isDisc?'Итог дискуссии':'Итоговый протокол';
+      const synthPrompt=isDisc?DISC_SYNTH_PROMPT:SYNTH_PROMPT;
+      const synthColor=isDisc?'var(--accent-purple)':'var(--accent-gold)';
+      const synthEmoji=isDisc?'⚡':'📋';
+      sb.innerHTML=`${synthEmoji} ${synthTitle}... <button class="stop-btn" onclick="stop()">Стоп</button>`;
       const sc=document.getElementById('chip-synth');if(sc)sc.classList.add('speaking');
-      showTyp({emoji:'📋',title:'Протокол',color:'var(--accent-gold)',model:'claude-sonnet'});
-      try{const all=resps.map(r=>`[${r.title}]: ${r.text}`).join('\n\n');const sm=`Question: "${q}"\nContext: ${p.context||'N/A'}\n\nAll opinions:\n${all}\n\nCreate the protocol in Russian.`;const st=await call('anthropic/claude-sonnet-4',GLOBAL_RULES+'\n'+SYNTH_PROMPT,sm);rmTyp();c.push({role:'board',memberId:'synth',title:'Итоговый протокол',text:st,model:'claude-sonnet',emoji:'📋',color:'var(--accent-gold)'})}
-      catch(e){rmTyp();if(e.name!=='AbortError')c.push({role:'board',memberId:'synth',title:'Протокол',text:`⚠️ ${e.message}`,emoji:'📋',color:'var(--accent-gold)'})}
+      showTyp({emoji:synthEmoji,title:synthTitle,color:synthColor,model:'claude-sonnet'});
+      try{const all=resps.map(r=>`[${r.title}]: ${r.text}`).join('\n\n');const sm=`Question: "${q}"\nContext: ${p.context||'N/A'}\n\nAll opinions:\n${all}\n\nCreate the ${isDisc?'summary':'protocol'} in Russian.`;const st=await call('anthropic/claude-sonnet-4',GLOBAL_RULES+'\n'+synthPrompt,sm);rmTyp();c.push({role:'board',memberId:'synth',title:synthTitle,text:st,model:'claude-sonnet',emoji:synthEmoji,color:synthColor})}
+      catch(e){rmTyp();if(e.name!=='AbortError')c.push({role:'board',memberId:'synth',title:synthTitle,text:`⚠️ ${e.message}`,emoji:synthEmoji,color:synthColor})}
       renderMsgs()
     }
   }finally{S.running=false;S.abort=null;sb.classList.remove('active');document.getElementById('sendBtn').disabled=false;document.querySelectorAll('.member-chip').forEach(c=>c.classList.remove('speaking','done'));save()}
